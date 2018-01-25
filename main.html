@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table, td {
+    border: 1px solid black;
+}
+</style>
+</head>
+<body>
+    <input type="file" id="file-input" />
+    <h3>Top 10 Error Reasons for this file:</h3>
+    <pre id="file-content"></pre>
+    <script type="text/javascript">
+        //returns contents (function grabbed from stackoverflow w/ some tweaking from me)
+        function readSingleFile(e) {
+            var file = e.target.files[0];
+            if (!file) {
+                return;
+            }
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var contents = e.target.result;
+                var arrayOfCsv = CSVToArray(contents);
+                var csvParseResults = ParseCsv(arrayOfCsv);
+                createTable(csvParseResults);
+            };
+            reader.readAsText(file);
+        }
+        document.getElementById('file-input').addEventListener('change', readSingleFile, false);
+        //end stack over flow code
+
+        function ParseCsv(csvArray) {
+            var returnedArray = [];
+            for (var i = 0; i < csvArray.length; i++) {
+                var currentInputArrayRow = csvArray[i];
+                var updateCountFlag = false;
+                var currentError;
+                var errorIndex = 0;
+                var returnedInnerArray = new Array(2);
+                for (var j = 0; j < returnedArray.length; j++) {
+                    //	alert("returnedArray is: " + returnedArray[j][0] + "and currentArrau is: " + currentInputArrayRow[1]);
+                    if (returnedArray[j][1] == currentInputArrayRow[1]) {
+                        updateCountFlag = true;
+                        currentError = currentInputArrayRow[1];
+                        errorIndex = j;
+                    }
+                }
+                if (updateCountFlag === true) {
+                    returnedArray[errorIndex][0] = returnedArray[errorIndex][0] + 1;
+                } else {
+                    returnedInnerArray[1] = currentInputArrayRow[1];
+                    returnedInnerArray[0] = 1;
+                    returnedArray.push(returnedInnerArray);
+                }
+            }
+            //sort array into top 10 descending -- works but on error num, not count
+            // also count not working
+            //sort function code grabbed from stackoverflow
+            returnedArray.sort(sortFunction);
+            function sortFunction(a, b) {
+                if (a[0] === b[0]) {
+                    return 0;
+                } else {
+                    return (a[0] > b[0]) ? -1 : 1;
+                }
+            }			
+			var topTenArray = [];
+			for(var x = 0; x < 10; x++) {
+				topTenArray.push(returnedArray[x]);
+			}
+            return topTenArray; 
+        }
+		//createTable grabbed from stack over flow
+        function createTable(tableData) {
+            var table = document.createElement('table');
+            var tableBody = document.createElement('tbody');
+			var header = table.createTHead();
+			var row = header.insertRow(0);
+			var cellA = row.insertCell(0);
+			var cellB = row.insertCell(1);
+			cellA.innerHTML = "<b>Count of Errors</b>";
+			cellB.innerHTML = "<b>Error Reason</b>";
+            tableData.forEach(function(rowData) {
+                var row = document.createElement('tr');
+                rowData.forEach(function(cellData) {
+                    var cell = document.createElement('td');
+                    cell.appendChild(document.createTextNode(cellData));
+                    row.appendChild(cell);
+                });
+                tableBody.appendChild(row);
+            });
+            table.appendChild(tableBody);
+            document.body.appendChild(table);
+        }
+
+        // ref: http://stackoverflow.com/a/1293163/2343
+        // This will parse a delimited string into an array of
+        // arrays. The default delimiter is the comma, but this
+        // can be overriden in the second argument.
+        function CSVToArray(strData, strDelimiter) {
+            // Check to see if the delimiter is defined. If not,
+            // then default to comma.
+            strDelimiter = (strDelimiter || ",");
+            // Create a regular expression to parse the CSV values.
+            var objPattern = new RegExp(
+                (
+                    // Delimiters.
+                    "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+                    // Quoted fields.
+                    "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+                    // Standard fields.
+                    "([^\"\\" + strDelimiter + "\\r\\n]*))"
+                ),
+                "gi"
+            );
+            // Create an array to hold our data. Give the array
+            // a default empty first row.
+            var arrData = [
+                []
+            ];
+            // Create an array to hold our individual pattern
+            // matching groups.
+            var arrMatches = null;
+            // Keep looping over the regular expression matches
+            // until we can no longer find a match.
+            while (arrMatches = objPattern.exec(strData)) {
+                // Get the delimiter that was found.
+                var strMatchedDelimiter = arrMatches[1];
+                // Check to see if the given delimiter has a length
+                // (is not the start of string) and if it matches
+                // field delimiter. If id does not, then we know
+                // that this delimiter is a row delimiter.
+                if (
+                    strMatchedDelimiter.length &&
+                    strMatchedDelimiter !== strDelimiter
+                ) {
+                    // Since we have reached a new row of data,
+                    // add an empty row to our data array.
+                    arrData.push([]);
+                }
+                var strMatchedValue;
+                // Now that we have our delimiter out of the way,
+                // let's check to see which kind of value we
+                // captured (quoted or unquoted).
+                if (arrMatches[2]) {
+                    // We found a quoted value. When we capture
+                    // this value, unescape any double quotes.
+                    strMatchedValue = arrMatches[2].replace(
+                        new RegExp("\"\"", "g"),
+                        "\""
+                    );
+                } else {
+                    // We found a non-quoted value.
+                    strMatchedValue = arrMatches[3];
+                }
+                // Now that we have our value string, let's add
+                // it to the data array.
+                arrData[arrData.length - 1].push(strMatchedValue);
+            }
+
+            // Return the parsed data.
+            return (arrData);
+        }
+    </script>
+</body>
+
+</html>
